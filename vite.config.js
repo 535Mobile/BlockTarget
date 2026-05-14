@@ -6,6 +6,16 @@ export default {
   },
   build: {
     outDir: 'dist',
-    sourcemap: true
+    sourcemap: true,
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          phaser: ['phaser']
+        }
+      }
+    }
+  },
+  optimizeDeps: {
+    include: ['phaser']
   }
 }
