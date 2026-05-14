@@ -33,6 +33,33 @@ export default class MainScene extends Phaser.Scene {
     // We need this to be able to pick random tiles for the target
     this.tiles = [];
 
+    // Initialize score and game state
+    this.score = 0;
+    this.gameOver = false;
+    this.timeRemaining = 30;
+    this.lastHitTime = 0;
+
+    // Create score display (top-left, white, 24px)
+    this.scoreText = this.add.text(20, 20, 'Score: 0', {
+      fontSize: '24px',
+      fill: '#ffffff'
+    });
+    this.scoreText.setOrigin(0, 0);
+    this.scoreText.setDepth(100);
+
+    // Create timer display (top-right, white, 24px)
+    this.timerText = this.add.text(
+      this.game.config.width - 20,
+      20,
+      'Time: 30',
+      {
+        fontSize: '24px',
+        fill: '#ffffff'
+      }
+    );
+    this.timerText.setOrigin(1, 0);
+    this.timerText.setDepth(100);
+
     // Calculate total dimensions of the entire grid
     // 5 cols × 60px = 300px wide, 5 rows × 60px = 300px tall
     const gridWidth = GRID_COLS * SQUARE_SIZE;
@@ -45,6 +72,17 @@ export default class MainScene extends Phaser.Scene {
     // Position grid in upper-middle of the 640px canvas
     // (640 - 300) / 2 = 170px from top, minus 60px offset = 110px from top
     const startY = (this.game.config.height - gridHeight) / 2 - 60;
+
+    // Create white flash overlay for hit effect (sized to grid only)
+    this.flashOverlay = this.add.rectangle(
+      startX + gridWidth / 2,
+      startY + gridHeight / 2,
+      gridWidth,
+      gridHeight,
+      0xffffff,
+      0.2
+    );
+    this.flashOverlay.setDepth(10000);
 
     // Nested loops: iterate through each row and column
     // This creates a 5×5 grid of squares
@@ -91,6 +129,11 @@ export default class MainScene extends Phaser.Scene {
         // We use an arrow function to capture 'tile' in a closure
         // This way, 'tile' is available inside the callback, and 'this' refers to the scene
         tile.on('pointerdown', () => {
+          // Stop processing if game is over
+          if (this.gameOver) {
+            return;
+          }
+
           // Check if this tile is already cleared - if so, ignore the tap
           if (tile.getData('cleared')) {
             return;
@@ -103,7 +146,69 @@ export default class MainScene extends Phaser.Scene {
           // Check if this is the target tile
           const isTarget = (tile === this.targetTile);
           if (isTarget) {
+            const now = this.time.now;
+            const timeSinceLastHit = now - this.lastHitTime;
+            const isCombo = timeSinceLastHit < 1000;
+
+            if (isCombo) {
+              this.score += 2;
+            } else {
+              this.score += 1;
+            }
+
+            this.scoreText.setText(`Score: ${this.score}`);
             console.log('Hit!');
+
+            // Show floating combo text if applicable
+            if (isCombo) {
+              const comboText = this.add.text(
+                this.scoreText.x + 80,
+                this.scoreText.y + 40,
+                '+2 COMBO',
+                {
+                  fontSize: '18px',
+                  fill: '#ffff00'
+                }
+              );
+              comboText.setOrigin(0.5, 0.5);
+              comboText.setDepth(100);
+
+              this.tweens.add({
+                targets: comboText,
+                y: comboText.y - 30,
+                alpha: 0,
+                duration: 1000,
+                ease: 'Quad.easeOut',
+                onComplete: () => comboText.destroy()
+              });
+            }
+
+            this.lastHitTime = now;
+
+            // Flash background white (fade in 50ms, fade out 200ms)
+            this.tweens.add({
+              targets: this.flashOverlay,
+              alpha: 0.8,
+              duration: 50,
+              ease: 'Linear',
+              onComplete: () => {
+                this.tweens.add({
+                  targets: this.flashOverlay,
+                  alpha: 0.2,
+                  duration: 200,
+                  ease: 'Quad.easeOut'
+                });
+              }
+            });
+
+            // Pop score text (scale 1.3 → 1.0)
+            this.scoreText.setScale(1.3);
+            this.tweens.add({
+              targets: this.scoreText,
+              scale: 1.0,
+              duration: 200,
+              ease: 'Back.easeOut'
+            });
           }
 
           // Mark this tile as cleared
@@ -164,8 +269,26 @@ export default class MainScene extends Phaser.Scene {
 
   // LIFECYCLE: update() runs every frame (60 times per second by default)
   // Purpose: Update positions, check input, run game logic, animations, etc.
-  // We don't define it here since animations are handled by Phaser's tween system
-  // If defined, Phaser would call it repeatedly after create() completes
+  update(time, delta) {
+    if (!this.gameOver) {
+      this.timeRemaining -= delta / 1000; // Convert milliseconds to seconds
+
+      if (this.timeRemaining <= 0) {
+        this.timeRemaining = 0;
+        this.gameOver = true;
+        // Disable all tiles to stop input
+        this.tiles.forEach(tile => {
+          if (tile.input) {
+            tile.disableInteractive();
+          }
+        });
+        console.log(`Game over, score: ${this.score}`);
+      }
+
+      // Update timer display (show rounded-up value)
+      this.timerText.setText(`Time: ${Math.ceil(this.timeRemaining)}`);
+    }
+  }
 }
 
 // NOTE ON TARGET MECHANIC:
