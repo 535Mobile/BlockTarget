@@ -99,6 +99,7 @@ export default class MenuScene extends Phaser.Scene {
     );
     playButton.setInteractive();
     playButton.on('pointerdown', () => {
+      this.sound.context.resume();
       this.scene.start('GameScene');
     });
 
