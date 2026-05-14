@@ -22,6 +22,7 @@ export default class MenuScene extends Phaser.Scene {
     // Load mute preference and apply to sound manager
     const isMuted = localStorage.getItem('wordfall_muted') === 'true';
     this.sound.mute = isMuted;
+    this.isMuted = isMuted;  // Store as scene property for reliable state
 
     // Mute toggle button (top-right corner)
     const muteButtonX = this.game.config.width - 45;
@@ -32,7 +33,7 @@ export default class MenuScene extends Phaser.Scene {
       muteButtonY,
       70,
       50,
-      isMuted ? 0xff6b6b : 0x4ecdc4
+      this.isMuted ? 0xff6b6b : 0x4ecdc4
     );
     muteButton.setDepth(100);
     muteButton.setInteractive({
@@ -43,25 +44,27 @@ export default class MenuScene extends Phaser.Scene {
     const muteText = this.add.text(
       muteButtonX,
       muteButtonY,
-      isMuted ? '🔇' : '🔊',
+      this.isMuted ? '🔇' : '🔊',
       {
         fontSize: '24px'
       }
     ).setOrigin(0.5, 0.5).setDepth(101);
 
     const updateMuteUI = () => {
-      muteButton.setFillStyle(this.sound.mute ? 0xff6b6b : 0x4ecdc4);
-      muteText.setText(this.sound.mute ? '🔇' : '🔊');
+      const isMuted = this.isMuted;
+      muteButton.setFillStyle(isMuted ? 0xff6b6b : 0x4ecdc4);
+      muteText.setText(isMuted ? '🔇' : '🔊');
     };
 
     muteButton.on('pointerdown', () => {
-      this.sound.mute = !this.sound.mute;
-      localStorage.setItem('wordfall_muted', this.sound.mute.toString());
+      this.isMuted = !this.isMuted;
+      this.sound.mute = this.isMuted;
+      localStorage.setItem('wordfall_muted', this.isMuted.toString());
       updateMuteUI();
     });
 
     muteButton.on('pointerover', () => {
-      muteButton.setFillStyle(this.sound.mute ? 0xff5252 : 0x3ab8a8);
+      muteButton.setFillStyle(this.isMuted ? 0xff5252 : 0x3ab8a8);
     });
 
     muteButton.on('pointerout', () => {
