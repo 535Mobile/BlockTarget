@@ -6,9 +6,10 @@ export default class MenuScene extends Phaser.Scene {
   }
 
   preload() {
-    this.load.audio('click', 'audio/Audio/click_001.ogg');
-    this.load.audio('ding', 'audio/Audio/confirmation_001.ogg');
-    this.load.audio('chime', 'audio/Audio/select_001.ogg');
+    const basePath = import.meta.env.BASE_URL;
+    this.load.audio('click', basePath + 'audio/Audio/click_001.ogg');
+    this.load.audio('ding', basePath + 'audio/Audio/confirmation_001.ogg');
+    this.load.audio('chime', basePath + 'audio/Audio/select_001.ogg');
 
     this.load.on('loaderror', (file) => {
       console.warn(`Failed to load audio: ${file.key}`);
