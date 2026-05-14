@@ -1,5 +1,5 @@
 export default {
-  base: '/wordfall/',
+  base: '/BlockTarget/',
   server: {
     port: 3000,
     open: true
