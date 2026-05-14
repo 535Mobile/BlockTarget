@@ -5,7 +5,53 @@ export default class MenuScene extends Phaser.Scene {
     super('MenuScene');
   }
 
+  preload() {
+    this.load.audio('click', 'audio/Audio/click_001.ogg');
+    this.load.audio('ding', 'audio/Audio/confirmation_001.ogg');
+    this.load.audio('chime', 'audio/Audio/select_001.ogg');
+  }
+
   create() {
+    // Load mute preference
+    const isMuted = localStorage.getItem('wordfall_muted') === 'true';
+    this.sound.mute = isMuted;
+
+    // Mute toggle button (top-right corner)
+    const muteButtonX = this.game.config.width - 40;
+    const muteButtonY = 40;
+
+    const muteButton = this.add.rectangle(
+      muteButtonX,
+      muteButtonY,
+      60,
+      40,
+      isMuted ? 0xff6b6b : 0x4ecdc4
+    );
+    muteButton.setInteractive();
+
+    const muteText = this.add.text(
+      muteButtonX,
+      muteButtonY,
+      isMuted ? '🔇' : '🔊',
+      {
+        fontSize: '20px'
+      }
+    ).setOrigin(0.5, 0.5);
+
+    muteButton.on('pointerdown', () => {
+      this.sound.mute = !this.sound.mute;
+      localStorage.setItem('wordfall_muted', this.sound.mute.toString());
+      muteButton.setFillStyle(this.sound.mute ? 0xff6b6b : 0x4ecdc4);
+      muteText.setText(this.sound.mute ? '🔇' : '🔊');
+    });
+
+    muteButton.on('pointerover', () => {
+      muteButton.setFillStyle(this.sound.mute ? 0xff5252 : 0x3ab8a8);
+    });
+    muteButton.on('pointerout', () => {
+      muteButton.setFillStyle(this.sound.mute ? 0xff6b6b : 0x4ecdc4);
+    });
+
     // Title text
     this.add.text(
       this.game.config.width / 2,
