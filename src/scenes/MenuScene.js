@@ -16,6 +16,9 @@ export default class MenuScene extends Phaser.Scene {
   }
 
   create() {
+    // Ensure input is enabled for this scene
+    this.input.enabled = true;
+
     // Load mute preference and apply to sound manager
     const isMuted = localStorage.getItem('wordfall_muted') === 'true';
     this.sound.mute = isMuted;
@@ -32,7 +35,10 @@ export default class MenuScene extends Phaser.Scene {
       isMuted ? 0xff6b6b : 0x4ecdc4
     );
     muteButton.setDepth(100);
-    muteButton.setInteractive({ useHandCursor: true });
+    muteButton.setInteractive({
+      useHandCursor: true,
+      hitArea: new Phaser.Geom.Rectangle(-35, -25, 70, 50)
+    });
 
     const muteText = this.add.text(
       muteButtonX,
@@ -60,6 +66,11 @@ export default class MenuScene extends Phaser.Scene {
 
     muteButton.on('pointerout', () => {
       updateMuteUI();
+    });
+
+    // Cleanup when scene shuts down
+    this.events.on('shutdown', () => {
+      this.input.enabled = false;
     });
 
     // Title text
@@ -97,7 +108,10 @@ export default class MenuScene extends Phaser.Scene {
       50,
       0x00ff00
     );
-    playButton.setInteractive();
+    playButton.setInteractive({
+      useHandCursor: true,
+      hitArea: new Phaser.Geom.Rectangle(-75, -25, 150, 50)
+    });
     playButton.on('pointerdown', () => {
       this.sound.context.resume();
       this.scene.start('GameScene');

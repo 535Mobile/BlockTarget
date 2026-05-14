@@ -64,7 +64,10 @@ export default class GameOverScene extends Phaser.Scene {
       50,
       0x00ff00
     );
-    playAgainButton.setInteractive();
+    playAgainButton.setInteractive({
+      useHandCursor: true,
+      hitArea: new Phaser.Geom.Rectangle(-75, -25, 150, 50)
+    });
     playAgainButton.on('pointerdown', () => {
       this.scene.start('GameScene');
     });
@@ -99,7 +102,10 @@ export default class GameOverScene extends Phaser.Scene {
       45,
       0x4ecdc4
     );
-    menuButton.setInteractive();
+    menuButton.setInteractive({
+      useHandCursor: true,
+      hitArea: new Phaser.Geom.Rectangle(-60, -22.5, 120, 45)
+    });
     menuButton.on('pointerdown', () => {
       this.scene.start('MenuScene');
     });
