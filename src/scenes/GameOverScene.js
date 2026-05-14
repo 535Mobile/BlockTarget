@@ -5,14 +5,8 @@ export default class GameOverScene extends Phaser.Scene {
     super('GameOverScene');
   }
 
-  preload() {
-    this.load.audio('click', 'audio/Audio/click_001.ogg');
-    this.load.audio('ding', 'audio/Audio/confirmation_001.ogg');
-    this.load.audio('chime', 'audio/Audio/select_001.ogg');
-  }
-
   create(data) {
-    this.sound.play('chime');
+    this.sound.play('chime', { volume: 0.7 });
     const finalScore = data.finalScore || 0;
 
     const bestScore = parseInt(localStorage.getItem('wordfall_reflex_best') || '0', 10);

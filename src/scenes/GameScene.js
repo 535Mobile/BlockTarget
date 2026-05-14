@@ -13,12 +13,6 @@ export default class GameScene extends Phaser.Scene {
     super('GameScene');
   }
 
-  preload() {
-    this.load.audio('click', 'audio/Audio/click_001.ogg');
-    this.load.audio('ding', 'audio/Audio/confirmation_001.ogg');
-    this.load.audio('chime', 'audio/Audio/select_001.ogg');
-  }
-
   shutdown() {
     this.tiles = [];
     this.targetTile = null;
@@ -101,7 +95,7 @@ export default class GameScene extends Phaser.Scene {
             return;
           }
 
-          this.sound.play('click');
+          this.sound.play('click', { volume: 0.3 });
 
           const tileRow = tile.getData('row');
           const tileCol = tile.getData('col');
@@ -120,7 +114,7 @@ export default class GameScene extends Phaser.Scene {
             }
 
             this.scoreText.setText(`Score: ${this.score}`);
-            this.sound.play('ding');
+            this.sound.play('ding', { volume: 0.6 });
             console.log('Hit!');
 
             if (isCombo) {
