@@ -1,11 +1,11 @@
 import Phaser from 'phaser';
 
 const PALETTE = [
-  0xff6b6b,
-  0x4ecdc4,
-  0xffe66d,
-  0xa8e6cf,
-  0xff8b94
+  0xff5e78,
+  0xff9500,
+  0xffce4d,
+  0x52d9a8,
+  0x7c3aed
 ];
 
 export default class GameScene extends Phaser.Scene {
@@ -64,42 +64,69 @@ export default class GameScene extends Phaser.Scene {
     );
     this.flashOverlay.setDepth(10000);
 
+    // Add drop shadow beneath the grid
+    const shadowGraphics = this.add.graphics();
+    shadowGraphics.fillStyle(0x000000, 0.15);
+    shadowGraphics.fillRoundedRect(
+      startX - 5,
+      startY + gridHeight + 8,
+      gridWidth + 10,
+      12,
+      4
+    );
+    shadowGraphics.setDepth(1);
+
+    const CORNER_RADIUS = 8;
+    this.tileDataMap = new Map();
+    this.hitAreas = [];
+
     for (let row = 0; row < GRID_ROWS; row++) {
       for (let col = 0; col < GRID_COLS; col++) {
         const x = startX + col * SQUARE_SIZE;
         const y = startY + row * SQUARE_SIZE;
+        const centerX = x + SQUARE_SIZE / 2;
+        const centerY = y + SQUARE_SIZE / 2;
 
         const color = Phaser.Utils.Array.GetRandom(PALETTE);
 
-        const tile = this.add.rectangle(
-          x + SQUARE_SIZE / 2,
-          y + SQUARE_SIZE / 2,
-          SQUARE_SIZE,
-          SQUARE_SIZE,
+        // Create graphics object for rounded rectangle tile
+        const tileGraphics = this.add.graphics();
+        this.drawTile(tileGraphics, x, y, color, CORNER_RADIUS);
+        tileGraphics.setDepth(2);
+
+        // Create invisible rectangle for interaction hit area
+        const hitArea = this.add.rectangle(centerX, centerY, SQUARE_SIZE, SQUARE_SIZE);
+        hitArea.setAlpha(0);
+        hitArea.setInteractive();
+
+        // Store tile data structure
+        const tileData = {
+          row,
+          col,
+          cleared: false,
+          graphics: tileGraphics,
+          x,
+          y,
           color
-        );
+        };
 
-        this.tiles.push(tile);
-        tile.setInteractive();
+        this.tiles.push(tileData);
+        this.hitAreas.push(hitArea);
+        this.tileDataMap.set(hitArea, tileData);
 
-        tile.setData('row', row);
-        tile.setData('col', col);
-        tile.setData('cleared', false);
-
-        tile.on('pointerdown', () => {
+        hitArea.on('pointerdown', () => {
           if (this.gameOver) {
             return;
           }
 
-          if (tile.getData('cleared')) {
+          const tile = this.tileDataMap.get(hitArea);
+          if (tile.cleared) {
             return;
           }
 
           this.sound.play('click', { volume: 0.3 });
 
-          const tileRow = tile.getData('row');
-          const tileCol = tile.getData('col');
-          console.log(`Tile clicked: row ${tileRow}, col ${tileCol}`);
+          console.log(`Tile clicked: row ${tile.row}, col ${tile.col}`);
 
           const isTarget = (tile === this.targetTile);
           if (isTarget) {
@@ -157,13 +184,12 @@ export default class GameScene extends Phaser.Scene {
               }
             });
 
-            const clearedTiles = this.tiles.filter(t => t.getData('cleared'));
+            const clearedTiles = this.tiles.filter(t => t.cleared);
             clearedTiles.forEach(t => {
-              t.setFillStyle(0x000000);
+              this.drawTile(t.graphics, t.x, t.y, 0x000000, CORNER_RADIUS);
               this.time.delayedCall(250, () => {
-                if (t.active) {
-                  t.setFillStyle(0x333333);
-                }
+                if (!t.cleared) return;
+                this.drawTile(t.graphics, t.x, t.y, 0x404040, CORNER_RADIUS);
               });
             });
 
@@ -176,18 +202,18 @@ export default class GameScene extends Phaser.Scene {
             });
           }
 
-          tile.setData('cleared', true);
-          tile.setFillStyle(0x333333);
-          tile.disableInteractive();
+          tile.cleared = true;
+          this.drawTile(tile.graphics, tile.x, tile.y, 0x404040, CORNER_RADIUS);
+          hitArea.disableInteractive();
 
           this.tweens.add({
-            targets: tile,
+            targets: hitArea,
             scale: 1.15,
             duration: 100,
             yoyo: true,
             ease: 'Quad.easeInOut',
-            onStart: () => tile.setDepth(1000),
-            onComplete: () => tile.setDepth(0)
+            onStart: () => hitArea.setDepth(1000),
+            onComplete: () => hitArea.setDepth(0)
           });
 
           if (isTarget) {
@@ -200,8 +226,14 @@ export default class GameScene extends Phaser.Scene {
     this.setRandomTarget();
   }
 
+  drawTile(graphics, x, y, color, radius) {
+    graphics.clear();
+    graphics.fillStyle(color, 1);
+    graphics.fillRoundedRect(x, y, 60, 60, radius);
+  }
+
   setRandomTarget() {
-    const availableTiles = this.tiles.filter(t => !t.getData('cleared'));
+    const availableTiles = this.tiles.filter(t => !t.cleared);
 
     if (availableTiles.length === 0) {
       return;
@@ -209,7 +241,7 @@ export default class GameScene extends Phaser.Scene {
 
     const newTarget = Phaser.Utils.Array.GetRandom(availableTiles);
     this.targetTile = newTarget;
-    newTarget.setFillStyle(0x00ff00);
+    this.drawTile(newTarget.graphics, newTarget.x, newTarget.y, 0x00ff00, 8);
   }
 
   update(time, delta) {
@@ -219,10 +251,8 @@ export default class GameScene extends Phaser.Scene {
       if (this.timeRemaining <= 0) {
         this.timeRemaining = 0;
         this.gameOver = true;
-        this.tiles.forEach(tile => {
-          if (tile.input) {
-            tile.disableInteractive();
-          }
+        this.hitAreas.forEach(hitArea => {
+          hitArea.disableInteractive();
         });
         this.scene.start('GameOverScene', { finalScore: this.score });
       }
