@@ -96,8 +96,10 @@ export default class GameScene extends Phaser.Scene {
 
         // Create invisible rectangle for interaction hit area
         const hitArea = this.add.rectangle(centerX, centerY, SQUARE_SIZE, SQUARE_SIZE);
-        hitArea.setAlpha(0);
-        hitArea.setInteractive();
+        hitArea.setFillStyle(0xffffff, 0.001);
+        hitArea.setStrokeStyle(0, 0);
+        hitArea.setDepth(50);
+        hitArea.setInteractive({ useHandCursor: true });
 
         // Store tile data structure
         const tileData = {
